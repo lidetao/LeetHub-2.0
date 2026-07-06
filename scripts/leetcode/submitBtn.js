@@ -75,7 +75,7 @@ function setupManualSubmitBtn(submitBtnHandler) {
   // For continued SPA use, detect when LeetCode dynamic layout loads, set up click listener, then listen for btns. 
   const pageObserver = new MutationObserver((_, observer) => {
     // Display submission button on refresh trigger
-    if (window.location.href.match(/leetcode\.com\/(.*)\/submissions\/(\d+)/)) {
+    if (window.location.href.match(/leetcode\.(com|cn)\/(.*)\/submissions\/(\d+)/)) {
       submissionPageBtnsObserver.observe(document.body, {
         childList: true,
         subtree: true,
