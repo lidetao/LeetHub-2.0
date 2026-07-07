@@ -555,7 +555,16 @@ async function v2SubmissionHandler(event, leetCode) {
   return true;
 }
 
-// Use MutationObserver to determine when the submit button elements are loaded
+// Track already-attached DOM elements so we can re-attach handlers when LeetCode's
+// dynamic UI replaces the submit button or textarea (e.g. after a submission).
+// WeakSet auto-clears entries when elements are garbage-collected.
+const attachedV1Btns = new WeakSet();
+const attachedV2Btns = new WeakSet();
+const attachedV2Textareas = new WeakSet();
+
+// Use MutationObserver to determine when the submit button elements are loaded.
+// IMPORTANT: do NOT disconnect — LeetCode's SPA may replace DOM elements after
+// each submission, so we must keep watching for new buttons/textareas.
 const submitBtnObserver = new MutationObserver(function (_mutations, observer) {
   const v1SubmitBtn = document.querySelector('[data-cy="submit-code-btn"]');
   const v2SubmitBtn = document.querySelector('[data-e2e-locator="console-submit-button"]');
@@ -567,21 +576,28 @@ const submitBtnObserver = new MutationObserver(function (_mutations, observer) {
       ? textareaList[0]
       : textareaList[1];
 
-  if (v1SubmitBtn) {
-    observer.disconnect();
-
+  if (v1SubmitBtn && !attachedV1Btns.has(v1SubmitBtn)) {
+    attachedV1Btns.add(v1SubmitBtn);
     const leetCode = new LeetCodeV1();
     v1SubmitBtn.addEventListener('click', () => loader(leetCode));
-    return;
   }
 
   if (v2SubmitBtn && textarea) {
-    observer.disconnect();
+    const isNewBtn = !attachedV2Btns.has(v2SubmitBtn);
+    const isNewTextarea = !attachedV2Textareas.has(textarea);
 
-    const leetCode = new LeetCodeV2();
-    if (!!!v2SubmitBtn.onclick) {
-      textarea.addEventListener('keydown', e => v2SubmissionHandler(e, leetCode));
-      v2SubmitBtn.onclick = e => v2SubmissionHandler(e, leetCode);
+    if (isNewBtn || isNewTextarea) {
+      // Create a single LeetCodeV2 instance shared by both button and textarea
+      const leetCode = new LeetCodeV2();
+
+      if (isNewBtn) {
+        attachedV2Btns.add(v2SubmitBtn);
+        v2SubmitBtn.addEventListener('click', e => v2SubmissionHandler(e, leetCode));
+      }
+      if (isNewTextarea) {
+        attachedV2Textareas.add(textarea);
+        textarea.addEventListener('keydown', e => v2SubmissionHandler(e, leetCode));
+      }
     }
   }
 });

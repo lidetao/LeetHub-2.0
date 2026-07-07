@@ -170,6 +170,10 @@ LeetCodeV1.prototype.getSuccessStateAndUpdate = function () {
     successTag[0].className === 'success__3Ai7' &&
     successTag[0].innerText.trim() === 'Success'
   ) {
+    // Skip if already processed (stale element from previous submission)
+    if (successTag[0].classList.contains('marked_as_success')) {
+      return false;
+    }
     console.log(successTag[0]);
     successTag[0].classList.add('marked_as_success');
     return true;
@@ -180,6 +184,9 @@ LeetCodeV1.prototype.getSuccessStateAndUpdate = function () {
     resultState.className === 'text-success' &&
     resultState.innerText === 'Accepted'
   ) {
+    if (resultState.classList.contains('marked_as_success')) {
+      return false;
+    }
     resultState.classList.add('marked_as_success');
     return true;
   }
@@ -499,6 +506,11 @@ LeetCodeV2.prototype.getProblemNameSlug = function () {
 LeetCodeV2.prototype.getSuccessStateAndUpdate = function () {
   const successTag = document.querySelectorAll('[data-e2e-locator="submission-result"]');
   if (checkElem(successTag)) {
+    // Skip if this success element was already processed (e.g. stale element
+    // from a previous submission still visible in the DOM during re-submit)
+    if (successTag[0].classList.contains('marked_as_success')) {
+      return false;
+    }
     console.log(successTag[0]);
     successTag[0].classList.add('marked_as_success');
     return true;
