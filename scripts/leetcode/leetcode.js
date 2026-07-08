@@ -521,14 +521,21 @@ function wasSubmittedByKeyboard(event) {
  * @returns {string} submissionId
  */
 async function listenForSubmissionId() {
-  const { submissionId } = await api.runtime.sendMessage({
-    type: 'LEETCODE_SUBMISSION',
-  });
-  if (submissionId == null) {
-    console.log(new LeetHubError('SubmissionIdNotFound'));
+  try {
+    const { submissionId } = await api.runtime.sendMessage({
+      type: 'LEETCODE_SUBMISSION',
+    });
+    if (submissionId == null) {
+      console.log(new LeetHubError('SubmissionIdNotFound'));
+      return;
+    }
+    return submissionId;
+  } catch (err) {
+    // The message channel closes if the URL never changes (e.g. LeetCode
+    // rejected the submission for validation errors). This is expected.
+    console.log('Submission ID listener closed without capturing an ID:', err.message);
     return;
   }
-  return submissionId;
 }
 
 /**
@@ -550,6 +557,9 @@ async function v2SubmissionHandler(event, leetCode) {
 
   // is click or is ctrl enter
   const submissionId = await listenForSubmissionId();
+  if (!submissionId) {
+    return; // Submission was rejected or URL never changed — nothing to upload
+  }
   leetCode.submissionId = submissionId;
   loader(leetCode);
   return true;
